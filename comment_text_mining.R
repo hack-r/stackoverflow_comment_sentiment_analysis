@@ -1,19 +1,20 @@
 
 # Libraries and Options ---------------------------------------------------
 set.seed(2018)
-pacman::p_load("aod", "AER", "arules", "bit64", "caret", "circlize","data.table", 
-            "devtools", "dplyr", "e1071", "fakeR", "forecast", 
-            "ggplot2", "ggraph", "ggrepel", "gridExtra", 
-            "gtools", "igraph", "imputeTS", "lpSolveAPI", 
-            "lubridate", "magick", "Matrix", "mclust", "mco", "Metrics", "memery",
-            "ModelMetrics", "nnet", "odbc", "pacman", "radarchart", "recipes", "readr", 
-            "ROCR", "RODBC", "RRF", "rstan", "speedglm", "sqldf", "textclean",
-            "tidyverse", "tidytext", "tm", "VGAM", "widyr", "xgboost", 
-            "xts", "zoo") 
+pacman::p_load(aod, AER, arules, bit64, caret, circlize,data.table, 
+            devtools, dplyr, e1071, fakeR, forecast, 
+            ggplot2, ggraph, ggrepel, gridExtra, 
+            gtools, igraph, imputeTS, lpSolveAPI, 
+            lubridate, magick, Matrix, mclust, mco, Metrics, memery,
+            ModelMetrics, nnet, odbc, pacman, radarchart, recipes, readr, 
+            ROCR, RODBC, RRF, rstan, SnowballC, speedglm, sqldf, textclean,
+            tidyverse, tidytext, tm, VGAM, widyr, xgboost, 
+            xts, zoo) 
   
 
 # Load Raw Data -----------------------------------------------------------
 sample <- fread("..//Downloads//QueryResults.csv") 
+data("stop_words")
 
 # Save in R format
 saveRDS(sample, "sample_raw.RDS")
@@ -57,8 +58,58 @@ t1 <- as.data.table(sample) %>%
   unnest_tokens(word, text_clean)
 head(t1)
 
+# Remove stop words
+stop_words
+my_stopwords <- data_frame(word = c(as.character(1:100),
+                                    "exchange",
+                                    "overflow",
+                                    "stack",
+                                    "stackoverflow",
+                                    ".com",
+                                    "com",
+                                    "org",
+                                    "net",
+                                    "chat",
+                                    "code",
+                                    "https",
+                                    "question",
+                                    "data",
+                                    "error",
+                                    "stackoverflow.com",
+                                    "file",
+                                    "questions",
+                                    "answer",
+                                    "function",
+                                    "add",
+                                    "subtract",
+                                    "minus",
+                                    "plus",
+                                    'positive',
+                                    "negative",
+                                    "warning",
+                                    "http",
+                                    "post",
+                                    "string",
+                                    "trouble",
+                                    "problem"))
+
+t2 <- t1 %>%
+  anti_join(stop_words, by = "word") %>%
+  anti_join(my_stopwords, by = "word") %>%
+  filter(str_detect(word, "[a-z]"))
+head(t2)
+
+t2 %>%
+  count(word) %>%
+  filter(n > 1000) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip()
+
 # Join word scores
-sample_sa <- t1 %>%
+sample_sa <- t2 %>%
   inner_join(get_sentiments("afinn")) # score -5 (talking smack) to 5 (most positive)
 head(sample_sa)
 
@@ -68,9 +119,12 @@ yoy <- sample_sa %>%
   summarize(avg_sentiment_AFINN_scale = mean(score))
 
 
-p<-ggplot(yoy, aes(x=as.factor(flag_treatment), y=avg_sentiment_AFINN_scale, color=as.factor(flag_treatment))) +
+p <- ggplot(yoy, aes(x=as.factor(flag_treatment), y=avg_sentiment_AFINN_scale, color=as.factor(flag_treatment))) +
   geom_bar(stat="identity", fill="white")
 p
+
+plot(density(sample_sa$score[sample_sa$flag_treatment==0]), main= "Density of Comment Sentiment on AFINN Scale")
+lines(density(sample_sa$score[sample_sa$flag_treatment==1]), col="blue")
 
 t.test(sample_sa$score[sample_sa$flag_treatment==1],
        sample_sa$score[sample_sa$flag_treatment==0])
