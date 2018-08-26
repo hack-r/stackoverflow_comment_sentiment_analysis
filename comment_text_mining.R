@@ -91,7 +91,44 @@ my_stopwords <- data_frame(word = c(as.character(1:100),
                                     "post",
                                     "string",
                                     "trouble",
-                                    "problem"))
+                                    "problem",
+                                    "issue",
+                                    "check",
+                                    "set",
+                                    "read",
+                                    "class",
+                                    "run",
+                                    "method",
+                                    "server",
+                                    "create",
+                                    "array",
+                                    "line",
+                                    "change",
+                                    "type",
+                                    "object",
+                                    "version",
+                                    "table",
+                                    "call",
+                                    "list",
+                                    "user",
+                                    "output",
+                                    "query",
+                                    "time",
+                                    "app",
+                                    "page",
+                                    "return",
+                                    "files",
+                                    "html",
+                                    "image",
+                                    "library",
+                                    "write",
+                                    "key",
+                                    "python",
+                                    "loop",
+                                    "id",
+                                    "java",
+                                    "url",
+                                    "project"))
 
 t2 <- t1 %>%
   anti_join(stop_words, by = "word") %>%
@@ -101,7 +138,7 @@ head(t2)
 
 t2 %>%
   count(word) %>%
-  filter(n > 1000) %>%
+  filter(n > 600) %>%
   mutate(word = reorder(word, n)) %>%
   ggplot(aes(word, n)) +
   geom_col() +
@@ -117,7 +154,7 @@ head(sample_sa)
 yoy <- sample_sa %>% 
   group_by(flag_treatment) %>% 
   summarize(avg_sentiment_AFINN_scale = mean(score))
-
+yoy
 
 p <- ggplot(yoy, aes(x=as.factor(flag_treatment), y=avg_sentiment_AFINN_scale, color=as.factor(flag_treatment))) +
   geom_bar(stat="identity", fill="white")
